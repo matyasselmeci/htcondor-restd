@@ -99,6 +99,11 @@ parameters:
     name: constraint
     type: string
     description: Classad expression to restrict the query
+  schedd:
+    in: query
+    name: schedd
+    type: string
+    description: Specific schedd to query
   statusQuery:
     in: query
     name: query
@@ -143,6 +148,7 @@ paths:
       parameters:
         - $ref: "#/parameters/projection"
         - $ref: "#/parameters/constraint"
+        - $ref: "#/parameters/schedd"
       responses:
         200:
           $ref: "#/responses/jobsOK"
@@ -164,6 +170,7 @@ paths:
           required: true
         - $ref: "#/parameters/projection"
         - $ref: "#/parameters/constraint"
+        - $ref: "#/parameters/schedd"
       responses:
         200:
           $ref: "#/responses/jobsOK"
@@ -190,6 +197,7 @@ paths:
           description: The ProcId of the job to return info for
           required: true
         - $ref: "#/parameters/projection"
+        - $ref: "#/parameters/schedd"
       responses:
         200:
           $ref: "#/responses/oneJobOK"
@@ -224,6 +232,7 @@ paths:
           type: string
           description: The classad attribute to return
           required: true
+        - $ref: "#/parameters/schedd"
       responses:
         200:
           description: OK
@@ -243,6 +252,7 @@ paths:
       parameters:
         - $ref: "#/parameters/projection"
         - $ref: "#/parameters/constraint"
+        - $ref: "#/parameters/schedd"
       responses:
         200:
           $ref: "#/responses/jobsOK"
@@ -264,6 +274,7 @@ paths:
           required: true
         - $ref: "#/parameters/projection"
         - $ref: "#/parameters/constraint"
+        - $ref: "#/parameters/schedd"
       responses:
         200:
           $ref: "#/responses/jobsOK"
@@ -290,6 +301,7 @@ paths:
           description: The ProcId of the job to return info for
           required: true
         - $ref: "#/parameters/projection"
+        - $ref: "#/parameters/schedd"
       responses:
         200:
           $ref: "#/responses/oneJobOK"
@@ -324,6 +336,7 @@ paths:
           type: string
           description: The classad attribute to return
           required: true
+        - $ref: "#/parameters/schedd"
       responses:
         200:
           description: OK
