@@ -193,4 +193,5 @@ def test_config(fixtures):
             == '"%s"' % socket.getfqdn()
         )
 
+
 # TODO Test flatten

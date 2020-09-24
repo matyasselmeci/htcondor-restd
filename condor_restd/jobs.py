@@ -27,7 +27,9 @@ from .errors import (
 from . import utils
 
 
-def _query_common(querytype, schedd_name, constraint, projection, limit=None, flatten=False):
+def _query_common(
+    querytype, schedd_name, constraint, projection, limit=None, flatten=False
+):
     # type: (str, Optional[str], str, Optional[str], Optional[int], Optional[bool]) -> List[Dict]
     """Return the result of a schedd or history file query with a
     constraint (classad expression) and a projection (comma-separated
@@ -119,7 +121,9 @@ class JobsBaseResource(Resource):
 
     querytype = ""
 
-    def query_multi(self, schedd, clusterid=None, constraint="true", projection=None, flatten=False):
+    def query_multi(
+        self, schedd, clusterid=None, constraint="true", projection=None, flatten=False
+    ):
         # type: (Optional[str], int, str, str, bool) -> List[Dict]
         """Return multiple jobs, optionally constraining by `clusterid` in
         addition to `constraint`.
@@ -176,7 +180,9 @@ class JobsBaseResource(Resource):
     def query_attribute(self, schedd, clusterid, procid, attribute, flatten=False):
         # type: (Optional[str], int, int, str, bool) -> Scalar
         """Return a single attribute."""
-        q = self.query_single(schedd, clusterid, procid, projection=attribute, flatten=flatten)
+        q = self.query_single(
+            schedd, clusterid, procid, projection=attribute, flatten=flatten
+        )
         if not q:
             abort(404, message=NO_JOBS)
         l_attribute = attribute.lower()
@@ -205,11 +211,19 @@ class JobsBaseResource(Resource):
                 attribute = six.ensure_str(attribute, errors="replace")
             except UnicodeError as err:
                 abort(400, message=str(err))
-            return self.query_attribute(schedd, clusterid, procid, attribute, flatten=args.flatten)
+            return self.query_attribute(
+                schedd, clusterid, procid, attribute, flatten=args.flatten
+            )
         if procid is not None:
-            return self.query_single(schedd, clusterid, procid, projection=projection, flatten=args.flatten)
+            return self.query_single(
+                schedd, clusterid, procid, projection=projection, flatten=args.flatten
+            )
         return self.query_multi(
-            schedd, clusterid, constraint=constraint, projection=projection, flatten=args.flatten
+            schedd,
+            clusterid,
+            constraint=constraint,
+            projection=projection,
+            flatten=args.flatten,
         )
 
 
@@ -241,7 +255,13 @@ class GroupedJobsBaseResource(Resource):
     querytype = ""
 
     def grouped_query_multi(
-        self, schedd, groupby, clusterid=None, constraint="true", projection=None, flatten=False
+        self,
+        schedd,
+        groupby,
+        clusterid=None,
+        constraint="true",
+        projection=None,
+        flatten=False,
     ):
         # type: (Optional[str], str, int, str, str, bool) -> Dict[str, List[Dict]]
         """Return multiple jobs grouped by `groupby`, optionally constraining
@@ -299,7 +319,12 @@ class GroupedJobsBaseResource(Resource):
         if schedd == "DEFAULT":
             schedd = None
         return self.grouped_query_multi(
-            schedd, groupby, clusterid, constraint=constraint, projection=projection, flatten=args.flatten
+            schedd,
+            groupby,
+            clusterid,
+            constraint=constraint,
+            projection=projection,
+            flatten=args.flatten,
         )
 
 
