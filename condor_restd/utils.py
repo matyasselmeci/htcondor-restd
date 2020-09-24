@@ -48,6 +48,15 @@ def deep_lcasekeys(in_value):
         return in_value
 
 
+def flatten_classad(a_classad):
+    # type: (classad.ClassAd) -> classad.ClassAd
+    """Return a copy of the classad with all attributes flattened"""
+    ret_classad = classad.ClassAd()
+    for k, v in a_classad.items():
+        ret_classad[k] = a_classad.flatten(v)
+    return ret_classad
+
+
 def classads_to_dicts(classads):
     # type: (List[classad.ClassAd]) -> List[Dict]
     """Return a copy of a list of classads as a list of dicts, with all the keys lowercased, recursively."""

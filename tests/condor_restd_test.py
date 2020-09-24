@@ -192,3 +192,5 @@ def test_config(fixtures):
             checked_get("v1/config/full_hostname%s" % arg).content.strip().decode()
             == '"%s"' % socket.getfqdn()
         )
+
+# TODO Test flatten

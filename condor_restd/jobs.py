@@ -27,8 +27,8 @@ from .errors import (
 from . import utils
 
 
-def _query_common(querytype, schedd_name, constraint, projection, limit=None):
-    # type: (str, Optional[str], str, Optional[str], Optional[int]) -> List[Dict]
+def _query_common(querytype, schedd_name, constraint, projection, limit=None, flatten=False):
+    # type: (str, Optional[str], str, Optional[str], Optional[int], Optional[bool]) -> List[Dict]
     """Return the result of a schedd or history file query with a
     constraint (classad expression) and a projection (comma-separated
     attributes), as a list of dicts.
@@ -97,6 +97,8 @@ def _query_common(querytype, schedd_name, constraint, projection, limit=None):
             )  # type: List[classad.ClassAd]
         else:
             assert False, "Invalid querytype %r" % querytype
+        if flatten:
+            classads = [utils.flatten_classad(it) for it in classads]
         classad_dicts = utils.classads_to_dicts(classads)
         for ad in classad_dicts:
             for attr in restd_hide_job_attrs_list:
@@ -117,8 +119,8 @@ class JobsBaseResource(Resource):
 
     querytype = ""
 
-    def query_multi(self, schedd, clusterid=None, constraint="true", projection=None):
-        # type: (Optional[str], int, str, str) -> List[Dict]
+    def query_multi(self, schedd, clusterid=None, constraint="true", projection=None, flatten=False):
+        # type: (Optional[str], int, str, str, bool) -> List[Dict]
         """Return multiple jobs, optionally constraining by `clusterid` in
         addition to `constraint`.
 
@@ -131,6 +133,7 @@ class JobsBaseResource(Resource):
             constraint=constraint,
             projection=projection,
             limit=None,
+            flatten=flatten,
         )
 
         projection_list = projection.lower().split(",") if projection else None
@@ -146,8 +149,8 @@ class JobsBaseResource(Resource):
 
         return data
 
-    def query_single(self, schedd, clusterid, procid, projection=None):
-        # type: (Optional[str], int, int, str) -> Dict
+    def query_single(self, schedd, clusterid, procid, projection=None, flatten=False):
+        # type: (Optional[str], int, int, str, bool) -> Dict
         """Return a single job."""
         ad_dicts = _query_common(
             self.querytype,
@@ -155,6 +158,7 @@ class JobsBaseResource(Resource):
             "clusterid==%d && procid==%d" % (clusterid, procid),
             projection,
             limit=1,
+            flatten=flatten,
         )
         if ad_dicts:
             ad = ad_dicts[0]
@@ -169,10 +173,10 @@ class JobsBaseResource(Resource):
         else:
             abort(404, message=NO_JOBS)
 
-    def query_attribute(self, schedd, clusterid, procid, attribute):
-        # type: (Optional[str], int, int, str) -> Scalar
+    def query_attribute(self, schedd, clusterid, procid, attribute, flatten=False):
+        # type: (Optional[str], int, int, str, bool) -> Scalar
         """Return a single attribute."""
-        q = self.query_single(schedd, clusterid, procid, projection=attribute)
+        q = self.query_single(schedd, clusterid, procid, projection=attribute, flatten=flatten)
         if not q:
             abort(404, message=NO_JOBS)
         l_attribute = attribute.lower()
@@ -185,6 +189,7 @@ class JobsBaseResource(Resource):
         parser = reqparse.RequestParser(trim=True)
         parser.add_argument("projection", default="")
         parser.add_argument("constraint", default="true")
+        parser.add_argument("flatten", default=False, type=bool)
         args = parser.parse_args()
         try:
             schedd = six.ensure_str(schedd, errors="replace")
@@ -200,11 +205,11 @@ class JobsBaseResource(Resource):
                 attribute = six.ensure_str(attribute, errors="replace")
             except UnicodeError as err:
                 abort(400, message=str(err))
-            return self.query_attribute(schedd, clusterid, procid, attribute)
+            return self.query_attribute(schedd, clusterid, procid, attribute, flatten=args.flatten)
         if procid is not None:
-            return self.query_single(schedd, clusterid, procid, projection=projection)
+            return self.query_single(schedd, clusterid, procid, projection=projection, flatten=args.flatten)
         return self.query_multi(
-            schedd, clusterid, constraint=constraint, projection=projection
+            schedd, clusterid, constraint=constraint, projection=projection, flatten=args.flatten
         )
 
 
@@ -236,9 +241,9 @@ class GroupedJobsBaseResource(Resource):
     querytype = ""
 
     def grouped_query_multi(
-        self, schedd, groupby, clusterid=None, constraint="true", projection=None
+        self, schedd, groupby, clusterid=None, constraint="true", projection=None, flatten=False
     ):
-        # type: (Optional[str], str, int, str, str) -> Dict[str, List[Dict]]
+        # type: (Optional[str], str, int, str, str, bool) -> Dict[str, List[Dict]]
         """Return multiple jobs grouped by `groupby`, optionally constraining
         by `clusterid` in addition to `constraint`.
 
@@ -258,6 +263,7 @@ class GroupedJobsBaseResource(Resource):
             constraint=constraint,
             projection=projection,
             limit=None,
+            flatten=flatten,
         )
 
         projection_list = projection.lower().split(",") if projection else None
@@ -280,6 +286,7 @@ class GroupedJobsBaseResource(Resource):
         parser = reqparse.RequestParser(trim=True)
         parser.add_argument("projection", default="")
         parser.add_argument("constraint", default="true")
+        parser.add_argument("flatten", default=False, type=bool)
         args = parser.parse_args()
         try:
             schedd = six.ensure_str(schedd, errors="replace")
@@ -292,7 +299,7 @@ class GroupedJobsBaseResource(Resource):
         if schedd == "DEFAULT":
             schedd = None
         return self.grouped_query_multi(
-            schedd, groupby, clusterid, constraint=constraint, projection=projection
+            schedd, groupby, clusterid, constraint=constraint, projection=projection, flatten=args.flatten
         )
 
 

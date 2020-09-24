@@ -47,6 +47,7 @@ class V1StatusResource(Resource):
         parser.add_argument("projection", default="")
         parser.add_argument("constraint", default="")
         parser.add_argument("query", choices=list(AD_TYPES_MAP.keys()), default="any")
+        parser.add_argument("flatten", default=False, type=bool)
         args = parser.parse_args()
         try:
             projection = six.ensure_str(args.projection, errors="replace")
@@ -84,6 +85,8 @@ class V1StatusResource(Resource):
             abort(503, message=FAIL_QUERY % {"service": "collector", "err": err})
         if not classads:
             return []
+        if args.flatten:
+            classads = [utils.flatten_classad(it) for it in classads]
         data = []
         ad_dicts = utils.classads_to_dicts(classads)
         for ad in ad_dicts:
@@ -115,6 +118,7 @@ class V1GroupedStatusResource(Resource):
         parser.add_argument("projection", default="")
         parser.add_argument("constraint", default="")
         parser.add_argument("query", choices=list(AD_TYPES_MAP.keys()), default="any")
+        parser.add_argument("flatten", default=False, type=bool)
         args = parser.parse_args()
         projection = None
         constraint = None
@@ -159,6 +163,8 @@ class V1GroupedStatusResource(Resource):
             abort(503, message=FAIL_QUERY % {"service": "collector", "err": err})
         if not classads:
             return {}
+        if args.flatten:
+            classads = [utils.flatten_classad(it) for it in classads]
         grouped_data = defaultdict(list)
         ad_dicts = utils.classads_to_dicts(classads)
         groupby = groupby.lower()
