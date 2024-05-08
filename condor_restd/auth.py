@@ -63,7 +63,8 @@ class AuthRequiredResource(Resource):
     """
     Base class for resources that require authentication.
     """
-    method_decorators = [multi_auth.login_required]
+    auth = multi_auth
+    method_decorators = [auth.login_required]
 
 
 class AuthOptionalResource(Resource):
@@ -71,7 +72,8 @@ class AuthOptionalResource(Resource):
     Base class for resources that where authenticating provides additional
     features but is not required.
     """
-    method_decorators = [multi_optional_auth.login_required]
+    auth = multi_optional_auth
+    method_decorators = [auth.login_required]
 
 
 class V1AuthRequiredTestResource(AuthRequiredResource):
@@ -80,7 +82,7 @@ class V1AuthRequiredTestResource(AuthRequiredResource):
     """
 
     def get(self):
-        return {"message": "Authenticated as %s" % multi_auth.current_user()}
+        return {"message": "Authenticated as %s" % self.auth.current_user()}
 
 
 class V1AuthOptionalTestResource(AuthOptionalResource):
@@ -89,7 +91,7 @@ class V1AuthOptionalTestResource(AuthOptionalResource):
     """
 
     def get(self):
-        user = multi_optional_auth.current_user()
+        user = self.auth.current_user()
         if user:
             return {"message": "Authenticated as %s" % user}
         else:
