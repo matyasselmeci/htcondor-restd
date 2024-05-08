@@ -18,5 +18,7 @@ setup(
         "flask>=2.0.0",
         "flask-restful==0.3.10",
         "htcondor>=10.0.0",
+        "Flask-HTTPAuth==4.*",
+        "PyJWT==2.*",
     ],
 )
