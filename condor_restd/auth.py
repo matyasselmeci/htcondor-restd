@@ -53,10 +53,10 @@ def verify_password(username, password):
 
 @basic_optional_auth.verify_password
 def verify_password_optional(username, password):
+    if not username:
+        return True
     if username in users and check_password_hash(users.get(username), password):
         return username
-    else:
-        return True
 
 
 class AuthRequiredResource(Resource):
