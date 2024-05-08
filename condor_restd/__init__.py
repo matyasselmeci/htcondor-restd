@@ -26,6 +26,10 @@ except ImportError:
 from flask import Flask, make_response
 from flask_restful import Resource, Api
 
+from .auth import (
+    V1AuthRequiredTestResource,
+    V1AuthOptionalTestResource,
+)
 from .config import V1ConfigResource
 from .jobs import (
     V1GroupedJobsResource,
@@ -44,8 +48,6 @@ app.logger.info("Using HTCondor Python bindings version %d", BINDINGS_VERSION)
 
 # Add the HTTP header to make queries work from any site.
 # This is OK for a public API: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSMissingAllowOrigin
-
-
 @api.representation("application/json")
 def output_json(data, code, headers=None):
     resp = make_response(json.dumps(data) + "\n", code)
@@ -93,3 +95,5 @@ api.add_resource(
     "/v1/grouped_status/<groupby>/<name>",
 )
 api.add_resource(V1ConfigResource, "/v1/config", "/v1/config/<attribute>")
+api.add_resource(V1AuthRequiredTestResource, "/v1/auth_required_test")
+api.add_resource(V1AuthOptionalTestResource, "/v1/auth_optional_test")
