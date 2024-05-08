@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-from functools import partialmethod
-
 try:
     from typing import Dict, List, Optional, Union
 
@@ -35,9 +33,10 @@ from . import utils
 
 
 basic_auth = HTTPBasicAuth()
+basic_optional_auth = HTTPBasicAuth()
 token_auth = HTTPTokenAuth("Bearer")
 multi_auth = MultiAuth(basic_auth, token_auth)
-multi_auth.login_optional = partialmethod(multi_auth.login_required, optional=True)
+multi_optional_auth = MultiAuth(basic_optional_auth, token_auth)
 
 
 # TESTING: Test credentials
@@ -52,6 +51,14 @@ def verify_password(username, password):
         return username
 
 
+@basic_optional_auth.verify_password
+def verify_password_optional(username, password):
+    if username in users and check_password_hash(users.get(username), password):
+        return username
+    else:
+        return True
+
+
 class AuthRequiredResource(Resource):
     """
     Base class for resources that require authentication.
@@ -64,7 +71,7 @@ class AuthOptionalResource(Resource):
     Base class for resources that where authenticating provides additional
     features but is not required.
     """
-    method_decorators = [multi_auth.login_optional]
+    method_decorators = [multi_optional_auth.login_required]
 
 
 class V1AuthRequiredTestResource(AuthRequiredResource):
