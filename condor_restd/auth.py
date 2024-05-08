@@ -89,7 +89,7 @@ class V1AuthOptionalTestResource(AuthOptionalResource):
     """
 
     def get(self):
-        user = multi_auth.current_user()
+        user = multi_optional_auth.current_user()
         if user:
             return {"message": "Authenticated as %s" % user}
         else:
