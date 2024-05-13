@@ -12,7 +12,6 @@ COPY --chown=restd . /usr/local/src/htcondor-restd/
 RUN if [ -e /home/restd/htcondor-restd/bin/activate ]; then \
         runuser restd bash -c " \
             . /home/restd/htcondor-restd/bin/activate && \
-            # copy everything to a dir restd has write permissions to \
             python3 -mpip install --upgrade /usr/local/src/htcondor-restd \
         "; \
     else \
