@@ -25,11 +25,15 @@ LOGIN_TIMEOUT = 30
 MAX_USERNAME_LENGTH = 64
 TESTUSER = "testuser"
 C2BUSER = "c2buser"
-MOCK_TOKEN = ("eyJhbGciOiJIUzI1NiIsImtpZCI6IlBPT0wifQ.eyJleHAiOjE3MTU2NDQ2OTgs"
-              "ImlhdCI6MTcxNTY0NDY5NywiaXNzIjoibWluaWNvbmRvciIsImp0aSI6IjViZjJ"
-              "kNGE5NDIzNmQyYjRmZDFiMWFkMTEwZDdiZDM4Iiwic2NvcGUiOiJjb25kb3I6XC"
-              "9SRUFEIGNvbmRvcjpcL1dSSVRFIiwic3ViIjoidGVzdHVzZXJAcmVzdGQifQ.v9"
-              "cYO-8iuj0MmcyjwC_Zf0x8WMie9ZEX9rgjmGGIhhY")
+MOCK_TOKEN = (
+    "eyJhbGciOiJIUzI1NiIsImtpZCI6IlBPT0wifQ.eyJleHAiOjE3MTU2NDQ2OTgs"
+    "ImlhdCI6MTcxNTY0NDY5NywiaXNzIjoibWluaWNvbmRvciIsImp0aSI6IjViZjJ"
+    "kNGE5NDIzNmQyYjRmZDFiMWFkMTEwZDdiZDM4Iiwic2NvcGUiOiJjb25kb3I6XC"
+    "9SRUFEIGNvbmRvcjpcL1dSSVRFIiwic3ViIjoidGVzdHVzZXJAcmVzdGQifQ.v9"
+    "cYO-8iuj0MmcyjwC_Zf0x8WMie9ZEX9rgjmGGIhhY"
+)
+AUTH_METHOD_TOKEN = "Token"
+AUTH_METHOD_BASIC = "Basic"
 
 
 basic_auth = HTTPBasicAuth()
@@ -68,15 +72,16 @@ def get_auth_method(a_request: flask.Request) -> str:
     if "Authorization" in a_request.headers:
         auth_header = a_request.headers.get("Authorization")
         if auth_header.startswith("Bearer "):
-            return "Bearer"
+            return AUTH_METHOD_TOKEN
         elif auth_header.startswith("Basic "):
-            return "Basic"
+            return AUTH_METHOD_BASIC
     return ""
 
 
-def make_error(message: str, status_code: int) -> flask.Response:
+def make_json_error(message: str, status_code: int) -> flask.Response:
     """
-    Return an error response.
+    Return a JSON error response -- this is a response with type application/json
+    that just has a 'message' attribute with the error message.
     """
     response = flask.jsonify({"message": message})
     response.status_code = status_code
@@ -87,6 +92,7 @@ class AuthRequiredResource(Resource):
     """
     Base class for resources that require authentication.
     """
+
     auth = multi_auth
     method_decorators = [auth.login_required]
 
@@ -96,6 +102,7 @@ class AuthOptionalResource(Resource):
     Base class for resources that where authenticating provides additional
     features but is not required.
     """
+
     auth = multi_optional_auth
     method_decorators = [auth.login_required]
 
@@ -106,7 +113,10 @@ class V1AuthRequiredTestResource(AuthRequiredResource):
     """
 
     def get(self):
-        return {"message": "Authenticated as %s" % self.auth.current_user()}
+        return {
+            "message": "Authenticated as %s using %s"
+            % (self.auth.current_user(), get_auth_method(request))
+        }
 
 
 class V1AuthOptionalTestResource(AuthOptionalResource):
@@ -117,7 +127,10 @@ class V1AuthOptionalTestResource(AuthOptionalResource):
     def get(self):
         user = self.auth.current_user()
         if user:
-            return {"message": "Authenticated as %s" % user}
+            return {
+                "message": "Authenticated as %s using %s"
+                % (user, get_auth_method(request))
+            }
         else:
             return {"message": "Not authenticated"}
 
@@ -134,37 +147,46 @@ class V1UserLoginResource(AuthOptionalResource):
         boolean for just returning a fake token instead of calling out to
         HTCondor.
         """
+        #
         # Parse the JSON request (if there is one)
+        #
         claimtobe = None
         mock = False
         if request.content_type == "application/json":
             claimtobe = request.json.get("claimtobe")
             if claimtobe and not isinstance(claimtobe, str):
-                return make_error("claimtobe must be a string", 400)
+                return make_json_error("claimtobe must be a string", 400)
             mock = request.json.get("mock")
             if mock and not isinstance(mock, bool):
-                return make_error("mock must be a boolean", 400)
+                return make_json_error("mock must be a boolean", 400)
 
-        auth_user = self.auth.current_user()
-
-        # Build the command to run to call out to HTCondor; run this even if we're mocking
-        # to test authentication.
-        cmd = ["condor_user_login"]
+        #
+        # Get the user to auth as, run some checks
+        #
         if claimtobe:
             if claimtobe != C2BUSER:
-                return make_error("you can only claim to be %s" % C2BUSER, 401)
-            cmd += [claimtobe]
-        elif auth_user:
-            if len(auth_user) > MAX_USERNAME_LENGTH:
-                return make_error("username too long", 400)
-            cmd += [auth_user]
+                return make_json_error("you can only claim to be %s" % C2BUSER, 401)
+            auth_user = claimtobe
         else:
-            return make_error("Not authenticated", 401)
+            auth_user = self.auth.current_user()
+        if not auth_user:
+            return make_json_error("Not authenticated", 401)
+        if len(auth_user) > MAX_USERNAME_LENGTH:
+            return make_json_error("username too long", 400)
 
+        #
+        # Return the mock token if that's what we were asked for
+        #
         if mock:
+            _log.info("Returning mock token")
             return flask.jsonify(token=MOCK_TOKEN)
 
+        #
+        # Otherwise, run condor_user_login to get an actual token
+        #
+        cmd = ["condor_user_login", auth_user]
         try:
+            _log.info("Running condor_user_login: %s", cmd)
             ret = subprocess.run(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -175,12 +197,20 @@ class V1UserLoginResource(AuthOptionalResource):
             )
         except OSError as err:
             _log.exception("OSError running condor_user_login: %s", err)
-            return make_error("Login failed", 500)
+            return make_json_error("Login failed", 500)
         except subprocess.TimeoutExpired:
+            _log.error("condor_user_login timed out")
             # 504 gateway timeout seems appropriate since the RESTD is a gateway between HTTP and HTCondor
-            return make_error("Requesting login timed out", 504)
+            return make_json_error("Requesting login timed out", 504)
 
+        #
+        # Check the results and return the token
+        #
         if ret.returncode != 0 or not ret.stdout:
-            return make_error("Login failed: %s" % ret.stderr, 401)
+            _log.warning(
+                "condor_user_login failed with code %d: %s", ret.returncode, ret.stderr
+            )
+            return make_json_error("Login failed: %s" % ret.stderr, 401)
         else:
+            _log.info("condor_user_login succeeded: returning token for %s", auth_user)
             return flask.jsonify(token=ret.stdout)
