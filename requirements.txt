@@ -1,4 +1,5 @@
 flask >= 2.0.0
+werkzeug
 flask-restful == 0.3.10
 htcondor >= 10.0.0
 six
