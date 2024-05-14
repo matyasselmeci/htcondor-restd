@@ -139,10 +139,10 @@ class V1UserLoginResource(AuthOptionalResource):
         mock = False
         if request.content_type == "application/json":
             claimtobe = request.json.get("claimtobe")
-            if not isinstance(claimtobe, str):
+            if claimtobe and not isinstance(claimtobe, str):
                 return make_error("claimtobe must be a string", 400)
             mock = request.json.get("mock")
-            if not isinstance(mock, bool):
+            if mock and not isinstance(mock, bool):
                 return make_error("mock must be a boolean", 400)
 
         auth_user = self.auth.current_user()
