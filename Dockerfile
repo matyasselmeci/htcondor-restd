@@ -43,7 +43,7 @@ RUN for n in 1 2 3 4; do \
         mkdir -p ~$user/.condor/tokens.d && \
         chmod 0700 ~$user/.condor/tokens.d && \
         echo 'SEC_CLIENT_AUTHENTICATION_METHODS = IDTOKENS' > ~$user/.condor/user_config && \
-        chown -R ${user}: ~$user \
+        chown -R ${user}: ~$user; \
     done
 
 # Give the RESTD permissions to create a login account for the submit users. \
