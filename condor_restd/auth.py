@@ -199,10 +199,16 @@ class V1UserLoginResource(AuthOptionalResource):
         try:
             token = request_user_login(auth_user)
             return flask.jsonify(token=token)
-            # TODO: check the various exceptions from Schedd.user_login() and return appropriate errors
-        except Exception as err:
+        except htcondor1.HTCondorIOError as err:
             _log.exception("Error getting token: %s", err)
-            return make_json_error("Error getting token", 500)
+            if "errmsg=SCHEDD:3" in str(err):
+                return make_json_error("No accounts available, try again later", 503)
+            elif "errmsg=SECMAN:" in str(err):
+                return make_json_error("RESTD cannot authenticate to schedd: %s" % err, 503)
+            return make_json_error("Error getting token: %s" % err, 500)
+        except Exception as err:
+            _log.exception("Exception getting token: %s", err)
+            return make_json_error("Unexpected error getting token", 500)
 
         # #
         # # Otherwise, run condor_user_login to get an actual token
