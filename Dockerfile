@@ -38,6 +38,6 @@ RUN if [ -e /home/restd/htcondor-restd/bin/activate ]; then \
 
 # Give the RESTD permissions to create a login account for the 'submituser' user. \
 RUN echo $'\
-SCHEDD_LOGIN_ACCOUNTS = submituser \n\
-ALLOW_ADMINISTRATOR = $(ALLOW_ADMINISTRATOR) restd \n\
+SCHEDD_LOGIN_ACCOUNTS = submituser\n\
+ALLOW_ADMINISTRATOR = $(ALLOW_ADMINISTRATOR) restd@$(FULL_HOSTNAME)\n\
 ' >> /etc/condor/config.d/10-placement-tokens.conf
