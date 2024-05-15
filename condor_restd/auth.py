@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import logging
-import subprocess
 
 import typing as t
 
@@ -207,39 +206,5 @@ class V1UserLoginResource(AuthOptionalResource):
                 return make_json_error("RESTD cannot authenticate to schedd: %s" % err, 503)
             return make_json_error("Error getting token: %s" % err, 500)
         except Exception as err:
-            _log.exception("Exception getting token: %s", err)
+            _log.exception("Unexpected error getting token: %s", err)
             return make_json_error("Unexpected error getting token", 500)
-
-        # #
-        # # Otherwise, run condor_user_login to get an actual token
-        # #
-        # cmd = ["condor_user_login", auth_user]
-        # try:
-        #     _log.info("Running condor_user_login: %s", cmd)
-        #     ret = subprocess.run(
-        #         cmd,
-        #         stdout=subprocess.PIPE,
-        #         stderr=subprocess.PIPE,
-        #         timeout=LOGIN_TIMEOUT,
-        #         encoding="utf-8",
-        #         errors="replace",
-        #     )
-        # except OSError as err:
-        #     _log.exception("OSError running condor_user_login: %s", err)
-        #     return make_json_error("Login failed", 500)
-        # except subprocess.TimeoutExpired:
-        #     _log.error("condor_user_login timed out")
-        #     # 504 gateway timeout seems appropriate since the RESTD is a gateway between HTTP and HTCondor
-        #     return make_json_error("Requesting login timed out", 504)
-        #
-        # #
-        # # Check the results and return the token
-        # #
-        # if ret.returncode != 0 or not ret.stdout:
-        #     _log.warning(
-        #         "condor_user_login failed with code %d: %s", ret.returncode, ret.stderr
-        #     )
-        #     return make_json_error("Login failed: %s" % ret.stderr, 401)
-        # else:
-        #     _log.info("condor_user_login succeeded: returning token for %s", auth_user)
-        #     return flask.jsonify(token=ret.stdout)

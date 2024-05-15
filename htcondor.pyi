@@ -88,6 +88,9 @@ class Schedd:
         self, description: Submit, count: int = ..., spool: bool = ..., **kwargs
     ) -> SubmitResult: ...
 
+    def user_login(self, user_name) -> str: ...
+
+
 class Submit:
     def __init__(self, input: Union[str, Dict] = ..., **kwargs): ...
 
