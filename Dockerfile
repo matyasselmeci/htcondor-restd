@@ -35,3 +35,9 @@ RUN if [ -e /home/restd/htcondor-restd/bin/activate ]; then \
     else \
         $(command -v pip-3 || command -v pip3) install --upgrade /usr/local/src/htcondor-restd; \
     fi
+
+# Give the RESTD permissions to create a login account for the 'submituser' user. \
+RUN echo $'\
+SCHEDD_LOGIN_ACCOUNTS = submituser \n\
+ALLOW_ADMINISTRATOR = $(ALLOW_ADMINISTRATOR) restd \n\
+' >> /etc/condor/config.d/10-placement-tokens.conf

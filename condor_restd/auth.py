@@ -13,6 +13,9 @@ from flask_restful import Resource
 from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth, MultiAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# Schedd.user_login() is only in the v1 bindings
+import htcondor as htcondor1
+
 try:
     import classad2 as classad
     import htcondor2 as htcondor
@@ -135,6 +138,15 @@ class V1AuthOptionalTestResource(AuthOptionalResource):
             return {"message": "Not authenticated"}
 
 
+def request_user_login(username: str) -> str:
+    """
+    Request a token from the schedd for the specified username.
+    Return the token.
+    """
+    token = htcondor1.Schedd().user_login(username)
+    return token
+
+
 class V1UserLoginResource(AuthOptionalResource):
     """
     Endpoint for authenticating to an AP to request a Placement Token
@@ -182,35 +194,46 @@ class V1UserLoginResource(AuthOptionalResource):
             return flask.jsonify(token=MOCK_TOKEN)
 
         #
-        # Otherwise, run condor_user_login to get an actual token
+        # Otherwise, get a token from the schedd.
         #
-        cmd = ["condor_user_login", auth_user]
         try:
-            _log.info("Running condor_user_login: %s", cmd)
-            ret = subprocess.run(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=LOGIN_TIMEOUT,
-                encoding="utf-8",
-                errors="replace",
-            )
-        except OSError as err:
-            _log.exception("OSError running condor_user_login: %s", err)
-            return make_json_error("Login failed", 500)
-        except subprocess.TimeoutExpired:
-            _log.error("condor_user_login timed out")
-            # 504 gateway timeout seems appropriate since the RESTD is a gateway between HTTP and HTCondor
-            return make_json_error("Requesting login timed out", 504)
+            token = request_user_login(auth_user)
+            return flask.jsonify(token=token)
+            # TODO: check the various exceptions from Schedd.user_login() and return appropriate errors
+        except Exception as err:
+            _log.exception("Error getting token: %s", err)
+            return make_json_error("Error getting token", 500)
 
+        # #
+        # # Otherwise, run condor_user_login to get an actual token
+        # #
+        # cmd = ["condor_user_login", auth_user]
+        # try:
+        #     _log.info("Running condor_user_login: %s", cmd)
+        #     ret = subprocess.run(
+        #         cmd,
+        #         stdout=subprocess.PIPE,
+        #         stderr=subprocess.PIPE,
+        #         timeout=LOGIN_TIMEOUT,
+        #         encoding="utf-8",
+        #         errors="replace",
+        #     )
+        # except OSError as err:
+        #     _log.exception("OSError running condor_user_login: %s", err)
+        #     return make_json_error("Login failed", 500)
+        # except subprocess.TimeoutExpired:
+        #     _log.error("condor_user_login timed out")
+        #     # 504 gateway timeout seems appropriate since the RESTD is a gateway between HTTP and HTCondor
+        #     return make_json_error("Requesting login timed out", 504)
         #
-        # Check the results and return the token
-        #
-        if ret.returncode != 0 or not ret.stdout:
-            _log.warning(
-                "condor_user_login failed with code %d: %s", ret.returncode, ret.stderr
-            )
-            return make_json_error("Login failed: %s" % ret.stderr, 401)
-        else:
-            _log.info("condor_user_login succeeded: returning token for %s", auth_user)
-            return flask.jsonify(token=ret.stdout)
+        # #
+        # # Check the results and return the token
+        # #
+        # if ret.returncode != 0 or not ret.stdout:
+        #     _log.warning(
+        #         "condor_user_login failed with code %d: %s", ret.returncode, ret.stderr
+        #     )
+        #     return make_json_error("Login failed: %s" % ret.stderr, 401)
+        # else:
+        #     _log.info("condor_user_login succeeded: returning token for %s", auth_user)
+        #     return flask.jsonify(token=ret.stdout)
