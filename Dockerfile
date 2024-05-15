@@ -37,12 +37,17 @@ RUN if [ -e /home/restd/htcondor-restd/bin/activate ]; then \
     fi
 
 # Add some submit users for the user pool
-RUN for n in 1 2 3 4 5; do \
-        useradd -m submituser${n}; \
+RUN for n in 1 2 3 4; do \
+        user=submituser$n; \
+        useradd -m $user && \
+        mkdir -p ~$user/.condor/tokens.d && \
+        chmod 0700 ~$user/.condor/tokens.d && \
+        echo 'SEC_CLIENT_AUTHENTICATION_METHODS = IDTOKENS' > ~$user/.condor/user_config && \
+        chown -R ${user}: ~$user \
     done
 
 # Give the RESTD permissions to create a login account for the submit users. \
 RUN echo $'\
-SCHEDD_LOGIN_ACCOUNTS = submituser submituser1 submituser2 submituser3 submituser4 submituser5\n\
+SCHEDD_LOGIN_ACCOUNTS = submituser1 submituser2 submituser3 submituser4\n\
 ALLOW_ADMINISTRATOR = $(ALLOW_ADMINISTRATOR) restd@$(FULL_HOSTNAME)\n\
 ' >> /etc/condor/config.d/10-placement-tokens.conf
