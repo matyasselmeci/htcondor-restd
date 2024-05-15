@@ -11,7 +11,7 @@ from flask import request
 from flask_restful import Resource
 from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth, MultiAuth
 from werkzeug.security import generate_password_hash, check_password_hash
-import jwt as PyJWT
+import jwt
 
 # Schedd.user_login() is only in the v1 bindings
 import htcondor as htcondor1
@@ -22,6 +22,10 @@ try:
 except ImportError:
     import classad
     import htcondor
+
+
+if not hasattr(jwt, "decode"):
+    raise ImportError("Wrong JWT library -- we need 'PyJWT' not 'jwt'")
 
 
 LOGIN_TIMEOUT = 30
@@ -172,7 +176,7 @@ class V1UserLoginResource(AuthRequiredResource):
         #
         try:
             token = request_user_login(username)
-            details = PyJWT.decode(token, options={"verify_signature": False})
+            details = jwt.decode(token, options={"verify_signature": False})
             return flask.jsonify(token=token, details=details)
         except htcondor1.HTCondorIOError as err:
             _log.exception("Error getting token: %s", err)
