@@ -26,14 +26,6 @@ except ImportError:
 LOGIN_TIMEOUT = 30
 MAX_USERNAME_LENGTH = 64
 TESTUSER = "testuser"
-C2BUSER = "c2buser"
-MOCK_TOKEN = (
-    "eyJhbGciOiJIUzI1NiIsImtpZCI6IlBPT0wifQ.eyJleHAiOjE3MTU2NDQ2OTgs"
-    "ImlhdCI6MTcxNTY0NDY5NywiaXNzIjoibWluaWNvbmRvciIsImp0aSI6IjViZjJ"
-    "kNGE5NDIzNmQyYjRmZDFiMWFkMTEwZDdiZDM4Iiwic2NvcGUiOiJjb25kb3I6XC"
-    "9SRUFEIGNvbmRvcjpcL1dSSVRFIiwic3ViIjoidGVzdHVzZXJAcmVzdGQifQ.v9"
-    "cYO-8iuj0MmcyjwC_Zf0x8WMie9ZEX9rgjmGGIhhY"
-)
 AUTH_METHOD_TOKEN = "Token"
 AUTH_METHOD_BASIC = "Basic"
 
@@ -146,57 +138,39 @@ def request_user_login(username: str) -> str:
     return token
 
 
-class V1UserLoginResource(AuthOptionalResource):
+class V1UserLoginResource(AuthRequiredResource):
     """
     Endpoint for authenticating to an AP to request a Placement Token
     """
 
     def post(self):
         """
-        Ask HTCondor for a token for the authenticated user.  Accepts JSON
-        with a "claimtobe" field to claim to be the test user, and a "mock"
-        boolean for just returning a fake token instead of calling out to
-        HTCondor.
+        Ask HTCondor for a token for the authenticated user.
+        Requires JSON with a "username" field for the username to request the
+        token for.
         """
-        #
-        # Parse the JSON request (if there is one)
-        #
-        claimtobe = None
-        mock = False
-        if request.content_type == "application/json":
-            claimtobe = request.json.get("claimtobe")
-            if claimtobe and not isinstance(claimtobe, str):
-                return make_json_error("claimtobe must be a string", 400)
-            mock = request.json.get("mock")
-            if mock and not isinstance(mock, bool):
-                return make_json_error("mock must be a boolean", 400)
+        # auth_user = self.auth.current_user()
+        # ^^ in the future use auth_user to see if the user has the right to request a token (and for whom)
 
         #
-        # Get the user to auth as, run some checks
+        # Get the user to request the token for, run some checks
         #
-        if claimtobe:
-            if claimtobe != C2BUSER:
-                return make_json_error("you can only claim to be %s" % C2BUSER, 401)
-            auth_user = claimtobe
-        else:
-            auth_user = self.auth.current_user()
-        if not auth_user:
-            return make_json_error("Not authenticated", 401)
-        if len(auth_user) > MAX_USERNAME_LENGTH:
+        json = request.get_json(cache=False, force=True)
+        try:
+            username = json.get("username")
+        except AttributeError:
+            return make_json_error("No or invalid JSON data in request", 400)
+
+        if not username or not isinstance(username, str):
+            return make_json_error("username not specified or not a string", 400)
+        elif len(username) > MAX_USERNAME_LENGTH:
             return make_json_error("username too long", 400)
 
         #
-        # Return the mock token if that's what we were asked for
-        #
-        if mock:
-            _log.info("Returning mock token")
-            return flask.jsonify(token=MOCK_TOKEN)
-
-        #
-        # Otherwise, get a token from the schedd.
+        # Get a token from the schedd.
         #
         try:
-            token = request_user_login(auth_user)
+            token = request_user_login(username)
             return flask.jsonify(token=token)
         except htcondor1.HTCondorIOError as err:
             _log.exception("Error getting token: %s", err)
@@ -204,7 +178,8 @@ class V1UserLoginResource(AuthOptionalResource):
                 return make_json_error("No accounts available, try again later", 503)
             elif "errmsg=SECMAN:" in str(err):
                 return make_json_error("RESTD cannot authenticate to schedd: %s" % err, 503)
-            return make_json_error("Error getting token: %s" % err, 500)
+            else:
+                return make_json_error("Error getting token: %s" % err, 500)
         except Exception as err:
             _log.exception("Unexpected error getting token: %s", err)
             return make_json_error("Unexpected error getting token", 500)
