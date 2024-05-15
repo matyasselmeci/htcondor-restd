@@ -1,4 +1,11 @@
-#!/bin/bash -x
-user=${1?Need user\'s name}
-condor_qusers "$user" -edit UserName=undefined
+#!/bin/bash
+user=${1}
+while [[ ! $user ]]; do
+    echo
+    echo >&2 "Please enter a condor user identifier to delete: "
+    read -r user
+done
 
+echo
+condor_qusers "$user" -edit UserName=undefined
+echo

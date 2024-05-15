@@ -1,12 +1,23 @@
-#!/bin/bash -x
+#!/bin/bash
 
-username=${1?Need username}
 host=localhost:8080
 endpoint=v1/user_login
 
-set -o pipefail
+username=${1}
+while [[ ! $username ]]; do
+    echo
+    echo >&2 "Please enter a username to request a token for: "
+    read -r username
+done
+
+ret_file="token-response.${username}"
+
+echo
 (
     umask 077
-    curl -u testuser:testpassword -d '{"username": "'"$username"'"}' "$host/$endpoint" | tee token."$username" &&
-        jq . token."$username"
+    set -o pipefail
+    curl -u testuser:testpassword -d '{"username": "'"$username"'"}' "$host/$endpoint" | tee "$ret_file" &&
+        echo &&
+        jq . "$ret_file"
 )
+echo

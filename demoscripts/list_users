@@ -1,2 +1,5 @@
-#!/bin/bash -x
+#!/bin/bash
+
+echo
 condor_qusers -af:ht User UserName
+echo
