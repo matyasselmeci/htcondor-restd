@@ -186,6 +186,9 @@ class V1UserLoginResource(AuthRequiredResource):
                 return make_json_error("RESTD cannot authenticate to schedd: %s" % err, 503)
             else:
                 return make_json_error("Error getting token: %s" % err, 500)
+        except jwt.exceptions.DecodeError as err:
+            _log.exception("Error decoding token: %s", err)
+            return make_json_error("Schedd returned invalid token: %s" % err, 500)
         except Exception as err:
             _log.exception("Unexpected error getting token: %s", err)
             return make_json_error("Unexpected error getting token", 500)
