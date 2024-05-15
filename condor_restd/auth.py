@@ -11,6 +11,7 @@ from flask import request
 from flask_restful import Resource
 from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth, MultiAuth
 from werkzeug.security import generate_password_hash, check_password_hash
+import jwt as PyJWT
 
 # Schedd.user_login() is only in the v1 bindings
 import htcondor as htcondor1
@@ -171,7 +172,8 @@ class V1UserLoginResource(AuthRequiredResource):
         #
         try:
             token = request_user_login(username)
-            return flask.jsonify(token=token)
+            details = PyJWT.decode(token, options={"verify_signature": False})
+            return flask.jsonify(token=token, details=details)
         except htcondor1.HTCondorIOError as err:
             _log.exception("Error getting token: %s", err)
             if "errmsg=SCHEDD:3" in str(err):
