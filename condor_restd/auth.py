@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 import logging
-
+import re
 import typing as t
 
 Scalar = t.Union[None, bool, int, float, str]
@@ -170,6 +170,8 @@ class V1UserLoginResource(AuthRequiredResource):
             return make_json_error("username not specified or not a string", 400)
         elif len(username) > MAX_USERNAME_LENGTH:
             return make_json_error("username too long", 400)
+        elif not re.match(r"[a-zA-Z0-9][^/]*$", username):  # username must start with a letter or number
+            return make_json_error("invalid username", status_code=400)
 
         #
         # Get a token from the schedd.
