@@ -46,6 +46,9 @@ RUN for n in 1 2 3 4; do \
         chown -R ${user}: ~$user; \
     done
 
+# Add some util scripts for the demo
+COPY demoscripts/* /usr/local/bin/
+
 # Give the RESTD permissions to create a login account for the submit users. \
 RUN echo $'\
 SCHEDD_LOGIN_ACCOUNTS = submituser1 submituser2 submituser3 submituser4\n\

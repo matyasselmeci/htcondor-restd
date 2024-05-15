@@ -1,0 +1,9 @@
+#!/bin/bash -x
+
+username=${1?Need username}
+host=localhost:8080
+endpoint=v1/user_login
+
+set -o pipefail
+curl -u testuser:testpassword -d '{"username": "'"$username"'"}' "$host/$endpoint" | tee token."$username" &&
+    jq . token."$username"

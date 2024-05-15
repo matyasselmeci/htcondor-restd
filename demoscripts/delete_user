@@ -1,0 +1,4 @@
+#!/bin/bash -x
+user=${1?Need user\'s name}
+condor_qusers "$user" -edit UserName=undefined
+
