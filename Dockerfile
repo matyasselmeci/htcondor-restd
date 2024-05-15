@@ -40,10 +40,11 @@ RUN if [ -e /home/restd/htcondor-restd/bin/activate ]; then \
 RUN for n in 1 2 3 4; do \
         user=submituser$n; \
         useradd -m $user && \
-        mkdir -p ~$user/.condor/tokens.d && \
-        chmod 0700 ~$user/.condor/tokens.d && \
-        echo 'SEC_CLIENT_AUTHENTICATION_METHODS = IDTOKENS' > ~$user/.condor/user_config && \
-        chown -R ${user}: ~$user; \
+        homedir=/home/$user && \
+        mkdir -p $homedir/.condor/tokens.d && \
+        chmod 0700 $homedir/.condor/tokens.d && \
+        echo 'SEC_CLIENT_AUTHENTICATION_METHODS = IDTOKENS' > $homedir/.condor/user_config && \
+        chown -R ${user}: $homedir; \
     done
 
 # Add some util scripts for the demo
