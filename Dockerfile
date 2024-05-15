@@ -2,6 +2,24 @@ ARG BASE_IMAGE=htcondor/mini
 FROM ${BASE_IMAGE}
 LABEL org.opencontainers.image.title="HTCondor REST Daemon dev/test image"
 LABEL org.opencontainers.image.vendor=""
+
+
+# If we have a new binary build of HTCondor in a repo and it is bind-mounted
+# to /localrepo, we can use it to upgrade the HTCondor in the image.
+
+RUN if [ -d /localrepo ]; then \
+        echo $'\
+[local] \n\
+name=Local \n\
+baseurl=file:///localrepo/ \n\
+enabled=1 \n\
+priority=1 \n\
+skip_if_unavailable=1 \n\
+gpgcheck=0' > /etc/yum.repos.d/local.repo && \
+        yum upgrade -y '*condor*'; \
+        yum clean all; \
+    fi
+
 RUN mkdir -p /usr/local/src
 RUN install -d -o restd -g restd /usr/local/src/htcondor-restd
 COPY --chown=restd . /usr/local/src/htcondor-restd/
