@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import logging
 import re
+import subprocess as sp
 import typing as t
 
 Scalar = t.Union[None, bool, int, float, str]
@@ -34,6 +35,7 @@ TESTUSER = "testuser"
 AUTH_METHOD_TOKEN = "Token"
 AUTH_METHOD_BASIC = "Basic"
 
+PLACEMENTD_USE_BINDINGS = False
 
 basic_auth = HTTPBasicAuth()
 basic_optional_auth = HTTPBasicAuth()
@@ -48,6 +50,15 @@ _log = logging.getLogger(__name__)
 users = {
     TESTUSER: generate_password_hash("testpassword"),
 }
+
+mock_user_list = [
+    {
+        "username": "testuser",
+        "localAccount": "local01",
+        "accountCreated": 1719205200,  # Mon Jun 24 12:00:00 AM CDT 2024
+        "tokenExpires": 1719291600,  # Tue Jun 25 12:00:00 AM CDT 2024
+    }
+]
 
 
 @basic_auth.verify_password
@@ -136,11 +147,28 @@ class V1AuthOptionalTestResource(AuthOptionalResource):
 
 def request_user_login(username: str) -> str:
     """
-    Request a token from the schedd for the specified username.
+    Request a token from the Schedd or PlacementD for the specified username.
     Return the token.
     """
-    token = htcondor1.Schedd().user_login(username)
+    if PLACEMENTD_USE_BINDINGS:
+        token = htcondor1.Schedd().user_login(username)
+    else:
+        proc = sp.run(["condor_login", "add", username], stdout=sp.PIPE, stderr=sp.PIPE, check=True)
+        token = proc.stdout.strip()
+
     return token
+
+
+def request_user_list(constraints: t.Sequence[str]) -> t.List[t.Dict]:
+    """
+    Get back a list of users that have been mapped with the PlacmenetD.
+    """
+    if PLACEMENTD_USE_BINDINGS:
+        raise NotImplementedError("We don't have bindings for the PlacementD yet")
+    else:
+        # proc = sp.run(["condor_login", "list"], stdout=sp.PIPE, stderr=sp.PIPE, check=True)
+        # ^^ and parse this
+        return mock_user_list
 
 
 class V1UserLoginResource(AuthRequiredResource):
@@ -188,9 +216,32 @@ class V1UserLoginResource(AuthRequiredResource):
                 return make_json_error("RESTD cannot authenticate to schedd: %s" % err, 503)
             else:
                 return make_json_error("Error getting token: %s" % err, 500)
+        except sp.CalledProcessError as err:
+            _log.exception("Error getting token: %s", err)
+            return make_json_error("Error getting token: %s" % err.stderr, 500)
         except jwt.exceptions.DecodeError as err:
             _log.exception("Error decoding token: %s", err)
             return make_json_error("Schedd returned invalid token: %s" % err, 500)
         except Exception as err:
             _log.exception("Unexpected error getting token: %s", err)
             return make_json_error("Unexpected error getting token", 500)
+
+
+class V1UserListResource(AuthRequiredResource):
+    """
+    Endpoint for requesting a list of user accounts from the AP
+    """
+    def get(self):
+        """
+        Ask HTCondor for the list of users that have been created by the
+        placement daemon.
+        """
+        try:
+            user_list = request_user_list([])
+            return flask.jsonify(user_list)
+        except sp.CalledProcessError as err:
+            _log.exception("Error getting user list: %s", err)
+            return make_json_error("Error getting user list: %s" % err.stderr, 500)
+        except Exception as err:
+            _log.exception("Unexpected error getting user list: %s", err)
+            return make_json_error("Unexpected error getting user list", 500)

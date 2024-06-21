@@ -30,6 +30,7 @@ from .auth import (
     V1AuthRequiredTestResource,
     V1AuthOptionalTestResource,
     V1UserLoginResource,
+    V1UserListResource,
 )
 from .config import V1ConfigResource
 from .jobs import (
@@ -99,3 +100,4 @@ api.add_resource(V1ConfigResource, "/v1/config", "/v1/config/<attribute>")
 api.add_resource(V1AuthRequiredTestResource, "/v1/auth_required_test", "/hello")
 api.add_resource(V1AuthOptionalTestResource, "/v1/auth_optional_test")
 api.add_resource(V1UserLoginResource, "/v1/user_login")
+api.add_resource(V1UserListResource, "/v1/user_list")
