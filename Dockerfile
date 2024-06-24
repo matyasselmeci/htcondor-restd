@@ -45,6 +45,7 @@ RUN for n in 1 2 3 4; do \
         chmod 0700 $homedir/.condor/tokens.d && \
         echo 'SEC_CLIENT_AUTHENTICATION_METHODS = IDTOKENS' > $homedir/.condor/user_config && \
         chown -R ${user}: $homedir; \
+        echo 'PLACEMENT_AP_USERS = $(PLACEMENT_AP_USERS) '"$user"'@$(UID_DOMAIN)' >> /etc/condor/config.d/10-placement-tokens.conf
     done
 
 # Add some util scripts for the demo
@@ -52,6 +53,6 @@ COPY demoscripts/* /usr/local/bin/
 
 # Give the RESTD permissions to create a login account for the submit users. \
 RUN echo $'\
-SCHEDD_LOGIN_ACCOUNTS = submituser1 submituser2 submituser3 submituser4\n\
+DAEMON_LIST = $(DAEMON_LIST) PLACEMENTD\n\
 ALLOW_ADMINISTRATOR = $(ALLOW_ADMINISTRATOR) restd@$(FULL_HOSTNAME)\n\
 ' >> /etc/condor/config.d/10-placement-tokens.conf

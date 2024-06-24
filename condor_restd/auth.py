@@ -151,9 +151,15 @@ def request_user_login(username: str) -> str:
     Return the token.
     """
     if PLACEMENTD_USE_BINDINGS:
-        token = htcondor1.Schedd().user_login(username)
+        raise NotImplementedError("We don't have bindings for the PlacementD yet")
     else:
-        proc = sp.run(["condor_login", "add", username], stdout=sp.PIPE, stderr=sp.PIPE, check=True)
+        proc = sp.run(
+            ["condor_login", "add", username],
+            stdout=sp.PIPE,
+            stderr=sp.PIPE,
+            encoding="latin-1",
+            check=True,
+        )
         token = proc.stdout.strip()
 
     return token
@@ -198,7 +204,9 @@ class V1UserLoginResource(AuthRequiredResource):
             return make_json_error("username not specified or not a string", 400)
         elif len(username) > MAX_USERNAME_LENGTH:
             return make_json_error("username too long", 400)
-        elif not re.match(r"[a-zA-Z0-9][^/]*$", username):  # username must start with a letter or number
+        elif not re.match(
+            r"[a-zA-Z0-9][^/]*$", username
+        ):  # username must start with a letter or number
             return make_json_error("invalid username", status_code=400)
 
         #
@@ -213,7 +221,9 @@ class V1UserLoginResource(AuthRequiredResource):
             if "errmsg=SCHEDD:3" in str(err):
                 return make_json_error("No accounts available, try again later", 503)
             elif "errmsg=SECMAN:" in str(err):
-                return make_json_error("RESTD cannot authenticate to schedd: %s" % err, 503)
+                return make_json_error(
+                    "RESTD cannot authenticate to schedd: %s" % err, 503
+                )
             else:
                 return make_json_error("Error getting token: %s" % err, 500)
         except sp.CalledProcessError as err:
@@ -231,6 +241,7 @@ class V1UserListResource(AuthRequiredResource):
     """
     Endpoint for requesting a list of user accounts from the AP
     """
+
     def get(self):
         """
         Ask HTCondor for the list of users that have been created by the
