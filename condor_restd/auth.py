@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import csv
 import logging
 import re
 import subprocess as sp
@@ -165,6 +166,46 @@ def request_user_login(username: str) -> str:
     return token
 
 
+def _read_placementdata(placementdata_path: str) -> t.List[t.Dict]:
+    """
+    Read the PlacementData file to get a list of users.
+    Skips empty entries but doesn't otherwise do filtering.
+
+    Returns: a list of dicts with the following fields:
+    -   localAccount: the local account name of the user
+    -   username: the username of the user
+    -   accountCreated: when the local account was assigned to the user
+    -   tokenExpires: when the token issued as part of logging in expires
+
+    Returns an empty list if the file cannot be read.
+    """
+    userlist = []
+    try:
+        with open(placementdata_path, "rt") as fh:
+            reader = csv.reader(fh)
+            for row in reader:
+                try:
+                    local_account = row[0]
+                    username = row[1]
+                    account_created = int(row[2])
+                    token_expires = int(row[3])
+                except ValueError:  # not an int?
+                    continue
+                if not username or not account_created:
+                    continue
+                userlist.append(
+                    dict(
+                        localAccount=local_account,
+                        username=username,
+                        accountCreated=account_created,
+                        tokenExpires=token_expires,
+                    )
+                )
+    except OSError as err:
+        _log.warning("Could not read placementdata file: %s", err)
+    return userlist
+
+
 def request_user_list(constraints: t.Sequence[str]) -> t.List[t.Dict]:
     """
     Get back a list of users that have been mapped with the PlacmenetD.
@@ -172,9 +213,9 @@ def request_user_list(constraints: t.Sequence[str]) -> t.List[t.Dict]:
     if PLACEMENTD_USE_BINDINGS:
         raise NotImplementedError("We don't have bindings for the PlacementD yet")
     else:
+        return _read_placementdata(htcondor.param.get("PLACEMENTD_DATAFILE"))
         # proc = sp.run(["condor_login", "list"], stdout=sp.PIPE, stderr=sp.PIPE, check=True)
         # ^^ and parse this
-        return mock_user_list
 
 
 class V1UserLoginResource(AuthRequiredResource):
