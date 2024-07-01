@@ -231,7 +231,6 @@ class V1UserLoginResource(AuthOptionalResource):
     """
     Endpoint for authenticating to an AP to request a Placement Token
     """
-    method_decorators = super().method_decorators + [support_cors]
 
     def post(self):
         """
