@@ -68,6 +68,7 @@ def support_cors(f):
     def wrapped(*args, **kwargs):
         response = f(*args, **kwargs)
         response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization"
         return response
     return wrapped
 
