@@ -69,6 +69,7 @@ def support_cors(f):
         response = f(*args, **kwargs)
         response.headers["Access-Control-Allow-Origin"] = "*"
         return response
+    return wrapped
 
 
 @basic_auth.verify_password
