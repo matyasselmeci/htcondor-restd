@@ -218,7 +218,7 @@ def request_user_list(constraints: t.Sequence[str]) -> t.List[t.Dict]:
         # ^^ and parse this
 
 
-class V1UserLoginResource(AuthRequiredResource):
+class V1UserLoginResource(AuthOptionalResource):
     """
     Endpoint for authenticating to an AP to request a Placement Token
     """
@@ -278,7 +278,7 @@ class V1UserLoginResource(AuthRequiredResource):
             return make_json_error("Unexpected error getting token", 500)
 
 
-class V1UserListResource(AuthRequiredResource):
+class V1UserListResource(AuthOptionalResource):
     """
     Endpoint for requesting a list of user accounts from the AP
     """
