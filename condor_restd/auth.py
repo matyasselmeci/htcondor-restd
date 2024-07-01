@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import csv
+import functools
 import logging
 import re
 import subprocess as sp
@@ -60,6 +61,14 @@ mock_user_list = [
         "tokenExpires": 1719291600,  # Tue Jun 25 12:00:00 AM CDT 2024
     }
 ]
+
+
+def support_cors(f):
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        response = f(*args, **kwargs)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
 
 
 @basic_auth.verify_password
@@ -222,6 +231,7 @@ class V1UserLoginResource(AuthOptionalResource):
     """
     Endpoint for authenticating to an AP to request a Placement Token
     """
+    method_decorators = super().method_decorators + [support_cors]
 
     def post(self):
         """
@@ -282,6 +292,7 @@ class V1UserListResource(AuthOptionalResource):
     """
     Endpoint for requesting a list of user accounts from the AP
     """
+    method_decorators = super().method_decorators + [support_cors]
 
     def get(self):
         """
