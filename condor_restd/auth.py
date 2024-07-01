@@ -114,7 +114,7 @@ class AuthRequiredResource(Resource):
     """
 
     auth = multi_auth
-    method_decorators = [auth.login_required]
+    method_decorators = [support_cors, auth.login_required]
 
 
 class AuthOptionalResource(Resource):
@@ -124,7 +124,7 @@ class AuthOptionalResource(Resource):
     """
 
     auth = multi_optional_auth
-    method_decorators = [auth.login_required]
+    method_decorators = [support_cors, auth.login_required]
 
 
 class V1AuthRequiredTestResource(AuthRequiredResource):
@@ -292,7 +292,6 @@ class V1UserListResource(AuthOptionalResource):
     """
     Endpoint for requesting a list of user accounts from the AP
     """
-    method_decorators = super().method_decorators + [support_cors]
 
     def get(self):
         """
