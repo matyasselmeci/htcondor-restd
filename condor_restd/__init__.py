@@ -7,6 +7,7 @@ configuration, and machine status.
 """
 from __future__ import absolute_import
 
+import functools
 import json
 
 try:
@@ -58,7 +59,19 @@ def output_json(data, code, headers=None):
     return resp
 
 
+def support_cors(f):
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        response = f(*args, **kwargs)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization"
+        return response
+    return wrapped
+
+
 class RootResource(Resource):
+    method_decorators = [support_cors]
+
     def get(self):
         return {}
 
