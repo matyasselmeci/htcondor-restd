@@ -39,16 +39,11 @@ AUTH_METHOD_BASIC = "Basic"
 
 PLACEMENTD_USE_BINDINGS = False
 
-
-class MultiOptionalAuth(MultiAuth):
-    login_optional = functools.partialmethod(MultiAuth.login_required, optional=True)
-
-
 basic_auth = HTTPBasicAuth()
 basic_optional_auth = HTTPBasicAuth()
 token_auth = HTTPTokenAuth("Bearer")
 multi_auth = MultiAuth(token_auth, basic_auth)
-multi_optional_auth = MultiOptionalAuth(token_auth, basic_optional_auth)
+multi_optional_auth = MultiAuth(token_auth, basic_optional_auth)
 
 _log = logging.getLogger(__name__)
 
@@ -130,7 +125,7 @@ class AuthOptionalResource(Resource):
     """
 
     auth = multi_optional_auth
-    method_decorators = [support_cors, auth.login_optional]
+    method_decorators = [support_cors, auth.login_required(optional=True)]
 
 
 class V1AuthRequiredTestResource(AuthRequiredResource):
