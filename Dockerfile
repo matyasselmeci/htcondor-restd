@@ -45,7 +45,7 @@ RUN for n in 1 2 3 4; do \
         chmod 0700 $homedir/.condor/tokens.d && \
         echo 'SEC_CLIENT_AUTHENTICATION_METHODS = IDTOKENS' > $homedir/.condor/user_config && \
         chown -R ${user}: $homedir; \
-        echo 'PLACEMENT_AP_USERS = $(PLACEMENT_AP_USERS) '"$user"'@$(UID_DOMAIN)' >> /etc/condor/config.d/10-placement-tokens.conf
+        echo 'PLACEMENT_AP_USERS = $(PLACEMENT_AP_USERS) '"$user"'@$(UID_DOMAIN)' >> /etc/condor/config.d/10-placement-tokens.conf; \
     done
 
 # Add some util scripts for the demo
