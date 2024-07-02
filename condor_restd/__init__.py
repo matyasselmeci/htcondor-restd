@@ -63,7 +63,7 @@ def output_json(data, code, headers=None):
 def add_cors(response: Response):
     response.access_control_allow_credentials = True
     response.access_control_allow_origin = "*"
-    response.access_control_allow_headers = "Authorization"
+    response.access_control_allow_headers = ["Authorization"]
     return response
 
 
