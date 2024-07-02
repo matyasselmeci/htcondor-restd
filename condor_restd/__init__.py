@@ -7,7 +7,6 @@ configuration, and machine status.
 """
 from __future__ import absolute_import
 
-import functools
 import json
 
 try:
@@ -24,7 +23,7 @@ except ImportError:
     import htcondor
     BINDINGS_VERSION = 1
 
-from flask import Flask, make_response
+from flask import Flask, make_response, Response
 from flask_restful import Resource, Api
 
 from .auth import (
@@ -49,6 +48,7 @@ api = Api(app)
 
 app.logger.info("Using HTCondor Python bindings version %d", BINDINGS_VERSION)
 
+
 # Add the HTTP header to make queries work from any site.
 # This is OK for a public API: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSMissingAllowOrigin
 @api.representation("application/json")
@@ -59,19 +59,15 @@ def output_json(data, code, headers=None):
     return resp
 
 
-def support_cors(f):
-    @functools.wraps(f)
-    def wrapped(*args, **kwargs):
-        response = f(*args, **kwargs)
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = "Authorization"
-        return response
-    return wrapped
+@app.after_request
+def add_cors(response: Response):
+    response.access_control_allow_credentials = True
+    response.access_control_allow_origin = "*"
+    response.access_control_allow_headers = "Authorization"
+    return response
 
 
 class RootResource(Resource):
-    method_decorators = [support_cors]
-
     def get(self):
         return {}
 
